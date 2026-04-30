@@ -9,6 +9,25 @@ all_df = pd.read_csv("Dashboard/main_data.csv")
 rfm_df = pd.read_csv("Dashboard/rfm_data.csv")
 all_df["order_purchase_timestamp"] = pd.to_datetime(all_df["order_purchase_timestamp"])
 
+# ── Membuat Fitur Interaktif (Sidebar Filter) ──────────────
+with st.sidebar:
+    st.image("https://github.com/dicodingacademy/assets/raw/main/logo.png") 
+    
+    # Mengambil range tanggal dari dataset
+    min_date = all_df["order_purchase_timestamp"].min()
+    max_date = all_df["order_purchase_timestamp"].max()
+
+    start_date, end_date = st.date_input(
+        label='Rentang Waktu',
+        min_value=min_date,
+        max_value=max_date,
+        value=[min_date, max_date]
+    )
+
+# Filter data utama berdasarkan input tanggal dari user (Inilah yang bikin interaktif)
+main_df = all_df[(all_df["order_purchase_timestamp"] >= str(start_date)) & 
+                 (all_df["order_purchase_timestamp"] <= str(end_date))]
+
 # ── Identitas & Pertanyaan Bisnis ───
 st.title("Proyek Analisis Data: E-Commerce Public Dataset")
 
@@ -49,15 +68,10 @@ st.header("E-Commerce Public Dataset Dashboard")
 # ── Section 1: Tren Pesanan & Revenue ─────────────────────
 st.subheader("Tren Jumlah Pesanan dan Pendapatan Kotor per Bulan")
 
-# 1. Ekstraksi bulan dan tahun
-all_df["month"] = all_df["order_purchase_timestamp"].dt.month
-all_df["year"] = all_df["order_purchase_timestamp"].dt.year
+main_df["month"] = main_df["order_purchase_timestamp"].dt.month
+main_df["year"] = main_df["order_purchase_timestamp"].dt.year
 
-# 2. Filter data khusus tahun 2017
-df_2017 = all_df[all_df["year"] == 2017]
-
-# 3. Total orders dan revenue per bulan
-monthly_sales = df_2017.groupby("month").agg(
+monthly_sales = main_df.groupby("month").agg(
     total_orders=("order_id", "nunique"),
     total_revenue=("revenue", "sum")
 ).reset_index().sort_values("month")
@@ -71,21 +85,24 @@ with col2:
 month_labels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
                 "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
+
+current_month_labels = [month_labels[i-1] for i in monthly_sales["month"]]
+
 fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-axes[0].plot(monthly_sales["month"], monthly_sales["total_orders"], color="seagreen")
-axes[0].set_title("Total Pesanan per Bulan 2017")
+axes[0].plot(monthly_sales["month"], monthly_sales["total_orders"], color="seagreen", marker='o')
+axes[0].set_title("Total Pesanan per Bulan")
 axes[0].set_xlabel("Bulan")
 axes[0].set_ylabel("Total Pesanan")
 axes[0].set_xticks(monthly_sales["month"])
-axes[0].set_xticklabels(month_labels)
+axes[0].set_xticklabels(current_month_labels)
 axes[0].grid(False)
 
-axes[1].plot(monthly_sales["month"], monthly_sales["total_revenue"], color="indianred")
-axes[1].set_title("Total Pendapatan Kotor per Bulan 2017")
+axes[1].plot(monthly_sales["month"], monthly_sales["total_revenue"], color="indianred", marker='o')
+axes[1].set_title("Total Pendapatan Kotor per Bulan")
 axes[1].set_xlabel("Bulan")
 axes[1].set_ylabel("Total Pendapatan Kotor")
 axes[1].set_xticks(monthly_sales["month"])
-axes[1].set_xticklabels(month_labels)
+axes[1].set_xticklabels(current_month_labels)
 axes[1].yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f"{x:,.0f}"))
 axes[1].grid(False)
 plt.tight_layout()
@@ -95,15 +112,10 @@ st.pyplot(fig)
 st.subheader("Performa Kategori Produk")
 st.markdown("#### Kategori Produk berdasarkan Jumlah Pendapatan Kotor")
 
-all_df["month"] = all_df["order_purchase_timestamp"].dt.month
-all_df["year"] = all_df["order_purchase_timestamp"].dt.year
-
-df_2017 = all_df[all_df["year"] == 2017]
-
-revenue_category = df_2017.groupby("product_category_name_english").agg(
+revenue_category = main_df.groupby("product_category_name_english").agg(
     total_orders=("order_id", "nunique"),
     total_revenue=("revenue", "sum")
-).reset_index().sort_values("total_orders", ascending=False)
+).reset_index().sort_values("total_revenue", ascending=False)
 
 top_r = revenue_category.nlargest(3, "total_revenue")
 bottom_r = revenue_category.nsmallest(3, "total_revenue")
@@ -111,11 +123,12 @@ bottom_r = revenue_category.nsmallest(3, "total_revenue")
 fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 
 sns.barplot(data=top_r, y="product_category_name_english", x="total_revenue", ax=axes[0], color="steelblue")
-axes[0].set_title("Kategori Produk Pendapatan Kotor Tertinggi")
+axes[0].set_title("Kategori Produk Pendapatan Tertinggi")
 axes[0].set_xlabel("Total Pendapatan Kotor")
 axes[0].set_ylabel("Kategori Produk")
+
 sns.barplot(data=bottom_r, y="product_category_name_english", x="total_revenue", ax=axes[1], color="darkorange")
-axes[1].set_title("Kategori Produk Pendapatan Kotor Terendah")
+axes[1].set_title("Kategori Produk Pendapatan Terendah")
 axes[1].set_xlabel("Total Pendapatan Kotor")
 axes[1].set_ylabel("Kategori Produk")
 plt.tight_layout()
@@ -123,7 +136,7 @@ st.pyplot(fig)
 
 st.markdown("#### Kategori Produk berdasarkan Jumlah Pesanan")
 
-orders_category = df_2017.groupby("product_category_name_english").agg(
+orders_category = main_df.groupby("product_category_name_english").agg(
     total_orders=("order_id", "nunique"),
     total_revenue=("revenue", "sum")
 ).reset_index().sort_values("total_orders", ascending=False)
@@ -137,6 +150,7 @@ sns.barplot(data=top_o, y="product_category_name_english", x="total_orders", ax=
 axes[0].set_title("Kategori Produk Pesanan Tertinggi")
 axes[0].set_xlabel("Total Pesanan")
 axes[0].set_ylabel("Kategori Produk")
+
 sns.barplot(data=bottom_o, y="product_category_name_english", x="total_orders", ax=axes[1], color="darkorange")
 axes[1].set_title("Kategori Produk Pesanan Terendah")
 axes[1].set_xlabel("Total Pesanan")
