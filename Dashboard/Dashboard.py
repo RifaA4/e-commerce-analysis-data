@@ -18,7 +18,7 @@ with col1:
 with col2:
     st.markdown("**Email:** cdcc001d6x1252@student.devacademy.id")
 with col3:
-    st.markdown("**ID Dicoding:** rifagnia")
+    st.markdown("**ID Dicoding:** CDCC001D6X1252")
 
 st.divider()
 
