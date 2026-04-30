@@ -5,8 +5,8 @@ import streamlit as st
 sns.set(style='dark')
 
 # ── Load Data ──────────────────────────────────────────────
-all_df = pd.read_csv(r"E:\Dicoding Basic\Coding Camp 2026\Tugas\Dashboard\main_data.csv")
-rfm_df = pd.read_csv(r"E:\Dicoding Basic\Coding Camp 2026\Tugas\Dashboard\rfm_data.csv")
+all_df = pd.read_csv("main_data.csv")
+rfm_df = pd.read_csv("rfm_data.csv")
 all_df["order_purchase_timestamp"] = pd.to_datetime(all_df["order_purchase_timestamp"])
 
 # ── Identitas & Pertanyaan Bisnis ───
