@@ -5,15 +5,20 @@ import streamlit as st
 sns.set(style='dark')
 
 # ── Load Data ──────────────────────────────────────────────
-all_df = pd.read_csv("Dashboard/main_data.csv")
-rfm_df = pd.read_csv("Dashboard/rfm_data.csv")
-all_df["order_purchase_timestamp"] = pd.to_datetime(all_df["order_purchase_timestamp"])
+@st.cache_data
+def load_data():
+    all_df = pd.read_csv("Dashboard/main_data.csv")
+    rfm_df = pd.read_csv("Dashboard/rfm_data.csv")
+    all_df["order_purchase_timestamp"] = pd.to_datetime(all_df["order_purchase_timestamp"])
+    all_df = all_df[all_df["order_purchase_timestamp"].dt.year == 2017]
+    return all_df, rfm_df
+
+all_df, rfm_df = load_data()
 
 # ── Membuat Fitur Interaktif (Sidebar Filter) ──────────────
 with st.sidebar:
     st.image("https://github.com/dicodingacademy/assets/raw/main/logo.png") 
     
-    # Mengambil range tanggal dari dataset
     min_date = all_df["order_purchase_timestamp"].min()
     max_date = all_df["order_purchase_timestamp"].max()
 
@@ -24,7 +29,6 @@ with st.sidebar:
         value=[min_date, max_date]
     )
 
-# Filter data utama berdasarkan input tanggal dari user (Inilah yang bikin interaktif)
 main_df = all_df[(all_df["order_purchase_timestamp"] >= str(start_date)) & 
                  (all_df["order_purchase_timestamp"] <= str(end_date))]
 
@@ -85,7 +89,6 @@ with col2:
 month_labels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
                 "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
-
 current_month_labels = [month_labels[i-1] for i in monthly_sales["month"]]
 
 fig, axes = plt.subplots(1, 2, figsize=(14, 5))
@@ -121,12 +124,10 @@ top_r = revenue_category.nlargest(3, "total_revenue")
 bottom_r = revenue_category.nsmallest(3, "total_revenue")
 
 fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-
 sns.barplot(data=top_r, y="product_category_name_english", x="total_revenue", ax=axes[0], color="steelblue")
 axes[0].set_title("Kategori Produk Pendapatan Tertinggi")
 axes[0].set_xlabel("Total Pendapatan Kotor")
 axes[0].set_ylabel("Kategori Produk")
-
 sns.barplot(data=bottom_r, y="product_category_name_english", x="total_revenue", ax=axes[1], color="darkorange")
 axes[1].set_title("Kategori Produk Pendapatan Terendah")
 axes[1].set_xlabel("Total Pendapatan Kotor")
@@ -145,12 +146,10 @@ top_o = orders_category.nlargest(3, "total_orders")
 bottom_o = orders_category.nsmallest(3, "total_orders")
 
 fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-
 sns.barplot(data=top_o, y="product_category_name_english", x="total_orders", ax=axes[0], color="steelblue")
 axes[0].set_title("Kategori Produk Pesanan Tertinggi")
 axes[0].set_xlabel("Total Pesanan")
 axes[0].set_ylabel("Kategori Produk")
-
 sns.barplot(data=bottom_o, y="product_category_name_english", x="total_orders", ax=axes[1], color="darkorange")
 axes[1].set_title("Kategori Produk Pesanan Terendah")
 axes[1].set_xlabel("Total Pesanan")
